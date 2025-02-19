@@ -1,0 +1,12 @@
+numba
+pandas
+matplotlib
+seaborn
+scikit-learn
+tqdm
+pydub
+pedalboard
+yt-dlp
+mido
+librosa
+randomname
