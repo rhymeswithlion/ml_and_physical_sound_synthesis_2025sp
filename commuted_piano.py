@@ -23,7 +23,6 @@ def calculate_strike(length_samples, strike_param_set):
         strike /= sum(strike)
         result += strike
 
-    result /= sum(result)
     return result
 
 
@@ -32,7 +31,10 @@ def mtof(m):
 
 
 class _ModelParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        # arbitrary_types_allowed=True
+    )
 
 
 class LPFParams(_ModelParams):
@@ -46,25 +48,34 @@ class StrikeParams(_ModelParams):
 
 
 class StringParams(_ModelParams):
-    gain: float = 0.5
+    gain: float
     lpf_params: LPFParams = LPFParams()
-    ap_denom: list[float] = [7, 1, 6]
-    freq_ratio: float = 0.9999
-    feedback_gain: float = 0.99
+    ap_denom: list[float]
+    freq_ratio: float
+    feedback_gain: float
+
+
+class ImpulseResponseParams(_ModelParams):
+    start_seconds: float
+    length_seconds: float
+    fade_in_seconds: float
+    fade_out_seconds: float
+    url: str
+    dry_wet_balance: float
 
 
 class CommutedPianoParams(_ModelParams):
-    freq: float = 440
+    freq: float
     channel: str = "L"
-    lpf_params: LPFParams = LPFParams()
-    ap_denom: list[float] = [7, 1, 6]
+    # lpf_params: LPFParams = LPFParams()
+    # ap_denom: list[float]
     sample_rate: int = 44100
-    hammer_delay_ms: float = 10.0
-    strike_params_list: list[StrikeParams] = [StrikeParams()]
-    strike_num_samples: int = 100
-    ir_dry_wet: float = 1.0
+    hammer_delay_ms: float
+    strike_params_list: list[StrikeParams]
+    strike_num_samples: int
+    ir_params: ImpulseResponseParams
 
-    strings: list[StringParams] = [StringParams()]
+    strings: list[StringParams]
 
     def to_piano_note(self, show_graphs=False):
         return params_to_piano_note(self, show_graphs=show_graphs)
@@ -105,43 +116,55 @@ def params_to_piano_note(p: CommutedPianoParams, *, show_graphs=False):
     )
 
     plate_left, plate_right = get_stereo_impulse_response(
-        start_seconds=0.000,
-        length_seconds=1.0,
-        fade_in_seconds=0.000,
-        fade_out_seconds=1.0,
-        url="https://oramics.github.io/sampled/IR/EMT140-Plate/samples/emt_140_dark_1.wav",
+        start_seconds=p.ir_params.start_seconds,
+        length_seconds=p.ir_params.length_seconds,
+        fade_in_seconds=p.ir_params.fade_in_seconds,
+        fade_out_seconds=p.ir_params.fade_out_seconds,
+        url=p.ir_params.url,
     )
     plates = {"L": plate_left, "R": plate_right}
+    print("plate len", len(plate_left))
+    assert len(plate_left) == 25000
 
     # single impulse
     res = impulse(0.001)
+    print(mfcc_hash(res)[:3])
 
     # hammer delay
-    res = hammer_delay(res, int(p.sample_rate * p.hammer_delay_ms / 1000))
+    # res = hammer_delay(res, int(p.sample_rate * p.hammer_delay_ms / 1000))
 
     # white noise
     res = convolve(res, white_noise(0.05))
     res /= np.max(np.abs(res))
+
     if show_graphs:
+        print("white_noise", mfcc_hash(res)[:3])
         play_audio(0.25 * res, title="white_noise")
 
     for i in range(10):
         res = comb(res, int((5 + i) / 3), 0.95 - 0.03 * i, 0.10)
     res /= np.max(np.abs(res))
+
     if show_graphs:
+        print("many filters", mfcc_hash(res)[:3])
         play_audio(0.25 * res, title="many filters")
 
     res = convolve(res, strike)
     res /= np.max(np.abs(res))
+
     if show_graphs:
+        print("strike", mfcc_hash(res)[:3])
         play_audio(0.25 * res, title="strike")
 
     res = add_with_padding(
-        np.cos(np.pi / 2.0 * (1 - p.ir_dry_wet)) * convolve(plates[channel], res),
-        np.cos(np.pi / 2.0 * (p.ir_dry_wet)) * res,
+        np.cos(np.pi / 2.0 * (1 - p.ir_params.dry_wet_balance))
+        * convolve(plates[channel], res),
+        np.cos(np.pi / 2.0 * (p.ir_params.dry_wet_balance)) * res,
     )
     res /= np.max(np.abs(res))
+
     if show_graphs:
+        print("plate", mfcc_hash(res)[:3])
         play_audio(0.25 * res, title="plate")
 
     res = reduce(
@@ -155,7 +178,9 @@ def params_to_piano_note(p: CommutedPianoParams, *, show_graphs=False):
                 *(
                     (
                         _b_and_a := biquad_lpf_coeffs(
-                            p.lpf_params.freq, p.lpf_params.q, p.sample_rate
+                            string_params.lpf_params.freq,
+                            string_params.lpf_params.q,
+                            p.sample_rate,
                         )
                     )[0]
                 ),
@@ -166,14 +191,16 @@ def params_to_piano_note(p: CommutedPianoParams, *, show_graphs=False):
             for string_params in p.strings
         ],
     )
+    print(_b_and_a)
 
     res /= np.max(np.abs(res))
+
     if show_graphs:
+        print("string", mfcc_hash(res)[:3])
         play_audio(0.25 * res, title="string")
 
-    print(mfcc_hash(res)[:3])
-
     if show_graphs:
+        print("final", mfcc_hash(res)[:3])
         play_audio(0.25 * res, auto_play=True, title="final")
 
     res /= np.max(np.abs(res))

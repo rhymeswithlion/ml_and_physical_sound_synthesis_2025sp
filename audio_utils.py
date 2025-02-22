@@ -11,18 +11,22 @@ DEFAULT_SAMPLE_RATE = 44100
 def get_stereo_impulse_response(
     url,
     *,
-    length_seconds=1,
-    start_seconds=0.20,
-    fade_in_seconds=0.001,
-    fade_out_seconds=1,
+    length_seconds,
+    start_seconds,
+    fade_in_seconds,
+    fade_out_seconds,
     sr=DEFAULT_SAMPLE_RATE,
 ):
     import matplotlib.pyplot as plt
     from scipy.io import wavfile
 
-    sr, plate = wavfile.read(download_url(url))
+    _sr, plate = wavfile.read(download_url(url))
 
-    # convert to float
+    if _sr != sr:
+        print(
+            f"Sampling rate of impulse response ({_sr}) does not match project ({sr})"
+        )
+
     if plate.dtype == np.int16:
         plate = plate / (2**15)
     elif plate.dtype == np.int32:
@@ -33,12 +37,12 @@ def get_stereo_impulse_response(
     plate_left = plate[:, 0]
     plate_right = plate[:, 1]
 
-    # plate_left = plate_left[int(start_seconds * sr) :]
-    # plate_right = plate_right[int(start_seconds * sr) :]
-    # plate_left = fade_in(plate_left, fade_in_seconds)
-    # plate_right = fade_in(plate_right, fade_in_seconds)
-    # plate_left = plate_left[: int(length_seconds * sr)]
-    # plate_right = plate_right[: int(length_seconds * sr)]
+    plate_left = plate_left[int(start_seconds * sr) :]
+    plate_right = plate_right[int(start_seconds * sr) :]
+    plate_left = fade_in(plate_left, fade_in_seconds)
+    plate_right = fade_in(plate_right, fade_in_seconds)
+    plate_left = plate_left[: int(length_seconds * sr)]
+    plate_right = plate_right[: int(length_seconds * sr)]
 
     plate_left = fade_out(plate_left, fade_out_seconds)
     plate_right = fade_out(plate_right, fade_out_seconds)
@@ -49,22 +53,26 @@ def get_stereo_impulse_response(
 
 
 def fade_out(x, seconds, sr=DEFAULT_SAMPLE_RATE):
-    output = x[-int(seconds * sr) :]
+    # output = x[-int(seconds * sr) :]
+    output = x.copy()
+    if seconds == 0:
+        return output
 
     fade = np.linspace(1.0, 0.0, int(seconds * sr))
-    if len(fade) > len(x):
-        fade = fade[-len(x) :]
-    output[-len(fade) :] = x[-len(fade) :] * fade
+    if len(fade) > len(output):
+        fade = fade[-len(output) :]
+    output[-len(fade) :] *= fade
     return output
 
 
 def fade_in(x, seconds, sr=DEFAULT_SAMPLE_RATE):
-    output = x[: int(seconds * sr)]
-    print(seconds * sr)
+    output = x.copy()
+    if seconds == 0:
+        return output
     fade = np.linspace(0.0, 1.0, int(seconds * sr))
-    if len(fade) > len(x):
-        fade = fade[: len(x)]
-    output[: len(fade)] = x[: len(fade)] * fade
+    if len(fade) > len(output):
+        fade = fade[: len(output)]
+    output[: len(fade)] *= fade
     return output
 
 
@@ -310,7 +318,7 @@ def mfcc_hash(data):
     import librosa
     import randomname
 
-    mfcc_values = librosa.feature.mfcc(y=data, sr=DEFAULT_SAMPLE_RATE, n_mfcc=13)
+    mfcc_values = librosa.feature.mfcc(y=data, sr=DEFAULT_SAMPLE_RATE, n_mfcc=3)
     hashes = [
         md5(
             json.dumps(
