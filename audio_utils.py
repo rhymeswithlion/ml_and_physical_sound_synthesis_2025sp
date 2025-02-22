@@ -17,15 +17,15 @@ def get_stereo_impulse_response(
     fade_out_seconds,
     sr=DEFAULT_SAMPLE_RATE,
 ):
-    import matplotlib.pyplot as plt
     from scipy.io import wavfile
 
     _sr, plate = wavfile.read(download_url(url))
 
     if _sr != sr:
-        print(
-            f"Sampling rate of impulse response ({_sr}) does not match project ({sr})"
-        )
+        pass
+        # print(
+        #     f"Sampling rate of impulse response ({_sr}) does not match project ({sr})"
+        # )
 
     if plate.dtype == np.int16:
         plate = plate / (2**15)
@@ -47,8 +47,8 @@ def get_stereo_impulse_response(
     plate_left = fade_out(plate_left, fade_out_seconds)
     plate_right = fade_out(plate_right, fade_out_seconds)
 
-    plt.plot(plate_left)
-    plt.show()
+    # plt.plot(plate_left)
+    # plt.show()
     return plate_left, plate_right
 
 

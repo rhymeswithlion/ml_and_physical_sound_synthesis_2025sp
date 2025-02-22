@@ -82,7 +82,7 @@ class CommutedPianoParams(_ModelParams):
 
 
 def hammer_delay(input_signal, delay_samples):
-    print(delay_samples)
+    # print(delay_samples)
     if len(input_signal) < delay_samples:
         input_signal = np.pad(input_signal, (0, delay_samples - len(input_signal) + 1))
     result = np.roll(input_signal, delay_samples)
@@ -92,7 +92,7 @@ def hammer_delay(input_signal, delay_samples):
 
 
 def add_with_padding(a, b):
-    print(len(a), len(b))
+    # print(len(a), len(b))
     if len(a) < len(b):
         a = np.pad(a, (0, len(b) - len(a)))
     else:
@@ -123,12 +123,12 @@ def params_to_piano_note(p: CommutedPianoParams, *, show_graphs=False):
         url=p.ir_params.url,
     )
     plates = {"L": plate_left, "R": plate_right}
-    print("plate len", len(plate_left))
-    assert len(plate_left) == 25000
+    # print("plate len", len(plate_left))
+    # assert len(plate_left) == 25000
 
     # single impulse
     res = impulse(0.001)
-    print(mfcc_hash(res)[:3])
+    # print(mfcc_hash(res)[:3])
 
     # hammer delay
     # res = hammer_delay(res, int(p.sample_rate * p.hammer_delay_ms / 1000))
@@ -191,7 +191,7 @@ def params_to_piano_note(p: CommutedPianoParams, *, show_graphs=False):
             for string_params in p.strings
         ],
     )
-    print(_b_and_a)
+    # print(_b_and_a)
 
     res /= np.max(np.abs(res))
 
