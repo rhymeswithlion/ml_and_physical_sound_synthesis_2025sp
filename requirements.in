@@ -10,3 +10,5 @@ yt-dlp
 mido
 librosa
 randomname
+pydantic
+torch

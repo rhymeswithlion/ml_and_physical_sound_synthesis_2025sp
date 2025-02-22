@@ -11,7 +11,7 @@ RESEARCH_DIR := $(shell git rev-parse --show-toplevel)
 
 .venv:
 	@echo "Creating virtual environment with Python $(PYTHON_VERSION)..."
-	@$(RESEARCH_DIR)/.common/bin/install-micromamba-python-version.sh $(PYTHON_VERSION) .venv
+	@$(RESEARCH_DIR)/bin/install-micromamba-python-version.sh $(PYTHON_VERSION) .venv
 
 
 	@echo "Installing dependencies from requirements*.txt"

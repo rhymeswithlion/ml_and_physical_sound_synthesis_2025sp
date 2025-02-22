@@ -193,3 +193,4 @@ log/
 .aider*
 
 data/
+cache/

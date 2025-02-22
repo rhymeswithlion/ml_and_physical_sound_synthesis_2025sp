@@ -18,6 +18,11 @@
     "**/.hg": true,
     "**/CVS": true,
     "**/.DS_Store": true,
-    "**/Thumbs.db": true
+    "**/Thumbs.db": true,
+    "**/.vscode": {
+      "when": "$(basename).code-workspace"
+    },
+    "**/__pycache__": true,
+    "**/.pytest_cache": true
   }
 }

@@ -38,6 +38,9 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
+        verbose: true
+        additional_dependencies: ["types-requests"]
+
   - repo: https://github.com/iterative/dvc
     rev: 3.58.0
     hooks:

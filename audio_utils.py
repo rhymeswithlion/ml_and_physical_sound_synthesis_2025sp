@@ -3,7 +3,69 @@ import numba as nb
 import numpy as np
 from scipy import signal
 
+from data_utils import download_url
+
 DEFAULT_SAMPLE_RATE = 44100
+
+
+def get_stereo_impulse_response(
+    url,
+    *,
+    length_seconds=1,
+    start_seconds=0.20,
+    fade_in_seconds=0.001,
+    fade_out_seconds=1,
+    sr=DEFAULT_SAMPLE_RATE,
+):
+    import matplotlib.pyplot as plt
+    from scipy.io import wavfile
+
+    sr, plate = wavfile.read(download_url(url))
+
+    # convert to float
+    if plate.dtype == np.int16:
+        plate = plate / (2**15)
+    elif plate.dtype == np.int32:
+        plate = plate / (2**31)
+    else:
+        raise ValueError(f"Unsupported dtype {plate.dtype}")
+
+    plate_left = plate[:, 0]
+    plate_right = plate[:, 1]
+
+    # plate_left = plate_left[int(start_seconds * sr) :]
+    # plate_right = plate_right[int(start_seconds * sr) :]
+    # plate_left = fade_in(plate_left, fade_in_seconds)
+    # plate_right = fade_in(plate_right, fade_in_seconds)
+    # plate_left = plate_left[: int(length_seconds * sr)]
+    # plate_right = plate_right[: int(length_seconds * sr)]
+
+    plate_left = fade_out(plate_left, fade_out_seconds)
+    plate_right = fade_out(plate_right, fade_out_seconds)
+
+    plt.plot(plate_left)
+    plt.show()
+    return plate_left, plate_right
+
+
+def fade_out(x, seconds, sr=DEFAULT_SAMPLE_RATE):
+    output = x[-int(seconds * sr) :]
+
+    fade = np.linspace(1.0, 0.0, int(seconds * sr))
+    if len(fade) > len(x):
+        fade = fade[-len(x) :]
+    output[-len(fade) :] = x[-len(fade) :] * fade
+    return output
+
+
+def fade_in(x, seconds, sr=DEFAULT_SAMPLE_RATE):
+    output = x[: int(seconds * sr)]
+    print(seconds * sr)
+    fade = np.linspace(0.0, 1.0, int(seconds * sr))
+    if len(fade) > len(x):
+        fade = fade[: len(x)]
+    output[: len(fade)] = x[: len(fade)] * fade
+    return output
 
 
 def play_audio(
@@ -28,7 +90,26 @@ def play_audio(
     if show_analysis:
         plot_spectrum_and_waveform(samples, sr=sr, title=title)
         # plot_cycles(samples)
-    display(Audio(samples, rate=sr, normalize=normalize, autoplay=auto_play))
+
+    res = Audio(samples, rate=sr, normalize=normalize)
+
+    if auto_play:
+        import subprocess
+        import tempfile
+        import wave
+
+        with tempfile.NamedTemporaryFile(suffix=".wav") as f:
+            with wave.open(f, "wb") as wf:
+                num_channels = samples.shape[1] if len(samples.shape) > 1 else 1
+                wf.setnchannels(num_channels)
+                wf.setsampwidth(2)
+                wf.setframerate(sr)
+                wf.writeframes((samples * 32767).astype(np.int16).tobytes())
+            subprocess.run(["afplay", "--volume", "0.5", f.name])
+            # time.sleep(0.1)
+
+    display(res)
+    # return res
 
 
 def plot_spectrum_and_waveform(
