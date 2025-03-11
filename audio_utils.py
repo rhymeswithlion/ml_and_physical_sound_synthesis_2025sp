@@ -76,6 +76,12 @@ def fade_in(x, seconds, sr=DEFAULT_SAMPLE_RATE):
     return output
 
 
+def load_audio(filename):
+    import soundfile as sf
+
+    return sf.read(filename)[0]
+
+
 def play_audio(
     samples,
     sr=DEFAULT_SAMPLE_RATE,
@@ -85,7 +91,17 @@ def play_audio(
     title=None,
 ):
     """Play audio samples"""
+    import pathlib
+
     from IPython.display import Audio, display
+
+    # If it's a path, convert to string
+    if isinstance(samples, pathlib.Path):
+        samples = str(samples)
+
+    # if samples is a file, load it
+    if isinstance(samples, str):
+        samples = load_audio(samples)
 
     samples = np.array(samples)
 
@@ -160,28 +176,6 @@ def plot_spectrum_and_waveform(
         ax.set_ylim(-1, 1)
 
     plt.show()
-
-
-# def plot_waveform(samples, sr, oscillations=10):
-#     import matplotlib.pyplot as plt
-
-#     # find random oscillations using zero crossings
-#     zeros = np.where(np.diff(np.sign(samples)))[0]
-#     if len(zeros) < oscillations:
-#         print("Not enough zero crossings")
-#         return
-#     samples = samples[zeros[0] : zeros[oscillations]]
-
-#     # plot wavefor
-
-#     fig = plt.figure(figsize=(15, 4), tight_layout=True)
-#     ax = fig.add_subplot(111)
-#     ax.plot(samples)
-#     ax.set_xlabel("Time")
-#     ax.set_ylabel("Amplitude")
-#     ax.set_ylim(-1, 1)
-#     ax.set_xlim(0, len(samples) / sr * oscillations)
-#     plt.show()
 
 
 def plot_cycles(samples, num_cycles=3):
