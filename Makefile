@@ -9,7 +9,7 @@ PYTHON_VERSION := $(shell cat .python-version)
 # Find the research directory, i.e. the repo root
 RESEARCH_DIR := $(shell git rev-parse --show-toplevel)
 
-.venv:
+.venv: faust_python
 	@echo "Creating virtual environment with Python $(PYTHON_VERSION)..."
 	@$(RESEARCH_DIR)/bin/install-micromamba-python-version.sh $(PYTHON_VERSION) .venv
 
@@ -21,6 +21,8 @@ RESEARCH_DIR := $(shell git rev-parse --show-toplevel)
 	@echo -e "[${GREEN} OK ${NC}] Created virtual environment with dependencies"
 
 	@./.venv/bin/pip install -q ipykernel
+
+	@./.venv/bin/pip install ./faust_python
 
 	@echo -e "[${GREEN} OK ${NC}] Installed ipykernel for VSCode integration"
 
@@ -61,3 +63,10 @@ test:
 	@echo -e "[ 🦙 ] Running tests"
 	@./.venv/bin/python -m pytest
 	@echo -e "[${GREEN} OK ${NC}] Tests passed"
+
+
+faust_python:
+	git clone https://github.com/hrtlacek/faust_python.git
+
+	# remove instances of ", float128" from ./faust_python/FAUSTPy/python_dsp.py
+	sed -i '' 's/, float128//g' ./faust_python/FAUSTPy/python_dsp.py

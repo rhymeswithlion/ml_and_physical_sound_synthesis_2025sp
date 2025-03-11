@@ -194,3 +194,5 @@ log/
 
 data/
 cache/
+
+*-svg/
