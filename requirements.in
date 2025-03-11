@@ -12,3 +12,6 @@ librosa
 randomname
 pydantic
 torch
+jinja2
+loguru
+ipython==8.22.0
