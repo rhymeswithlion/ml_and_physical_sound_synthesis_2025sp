@@ -1,3 +1,6 @@
+import hashlib
+from functools import cached_property
+
 import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
@@ -141,6 +144,12 @@ def plot_spectrum_and_waveform(
 ):
     import librosa
     import matplotlib.pyplot as plt
+
+    if len(samples.shape) == 2:
+        # take the first channel and flatten
+        samples = samples[:, 0]
+    elif len(samples.shape) > 2:
+        raise RuntimeError(f"Unsupported shape: {samples.shape}")
 
     samples = samples[: int(sr * max_time)]
 
@@ -475,3 +484,52 @@ def string(
         output_signal[i] = value
 
     return output_signal
+
+
+def write_wave(path, samples, sr=44100):
+    import wave
+
+    with wave.open(str(path), "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(sr)
+        wf.writeframes(samples.tobytes())
+
+
+class AudioClip:
+    def __init__(self, samples, sr=44100):
+        self.samples = samples
+        self.sr = sr
+
+    @cached_property
+    def data(self):
+        return self.samples.tobytes()
+
+    @cached_property
+    def sha256(self):
+        return hashlib.sha256(self.data).hexdigest()
+
+    def display(self):
+        self.play()
+
+    def play(self, *args, **kwargs):
+        from audio_utils import play_audio
+
+        play_audio(
+            self.get_first_channel(), *args, sr=self.sr, auto_play=True, **kwargs
+        )
+
+    def to_file(self, path):
+        write_wave(path, self.samples, self.sr)
+
+    def get_first_channel(self):
+        if len(self.samples.shape) == 2 and self.samples.shape[0] < 3:
+            return self.samples[0, :]
+        elif len(self.samples.shape) == 1:
+            return self.samples
+        else:
+            raise ValueError("AudioClip must have 1 or 2 channels")
+
+    def plot(self):
+        plt.plot(self.get_first_channel(), "-o")
+        plt.show()

@@ -7,6 +7,8 @@ from pathlib import Path
 import jinja2
 from loguru import logger
 
+from audio_utils import AudioClip
+
 TMP_DIR = Path("/tmp/pychuck")
 
 
@@ -26,8 +28,6 @@ class ChuckShred:
 
     @cached_property
     def sha256(self):
-        import hashlib
-
         return hashlib.sha256(self.code.encode()).hexdigest()
 
     @cached_property
@@ -69,42 +69,6 @@ class ChuckShred:
             logger.info(str(line.decode()))
 
         return stdout, stderr
-
-
-def write_wave(path, samples, sr=44100):
-    import wave
-
-    with wave.open(str(path), "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(sr)
-        wf.writeframes(samples.tobytes())
-
-
-class AudioClip:
-    def __init__(self, samples, sr=44100):
-        self.samples = samples
-        self.sr = sr
-
-        # write to file
-        self.path = TMP_DIR / f"{self.sha256}.wav"
-        write_wave(self.path, self.samples, self.sr)
-
-    @cached_property
-    def data(self):
-        return self.samples.tobytes()
-
-    @cached_property
-    def sha256(self):
-        return hashlib.sha256(self.data).hexdigest()
-
-    def display(self):
-        from audio_utils import play_audio
-
-        play_audio(self.samples, sr=self.sr, auto_play=True)
-
-    def to_file(self, path):
-        write_wave(path, self.samples, self.sr)
 
 
 def shreds_to_audio(*shreds, num_ms=1000):
