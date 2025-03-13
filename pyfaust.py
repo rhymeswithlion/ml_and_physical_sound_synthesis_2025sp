@@ -57,7 +57,7 @@ class FaustProcessor:
             self.td = td
 
             # write to self.name with the sha256
-            self.path = Path(td) / f"{self.name}_{self.sha256}{self.EXTENSION}"
+            self.path = Path(td) / f"{self.name}{self.EXTENSION}"
 
             self.path.parent.mkdir(parents=True, exist_ok=True)
             self.path.write_text(self.code)
@@ -72,7 +72,7 @@ class FaustProcessor:
                 subprocess.check_output(["faust", "-svg", self.path.as_posix()])
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(f"Error generating SVG: {e.output.decode()}")
-            process_svg_path = Path(td) / f"{self.name}_{self.sha256}-svg/process.svg"
+            process_svg_path = Path(td) / f"{self.name}-svg/process.svg"
             self.process_svg_path = process_svg_path
 
             if not process_svg_path.exists():
