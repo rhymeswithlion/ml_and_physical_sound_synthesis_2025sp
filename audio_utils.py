@@ -114,11 +114,14 @@ def play_audio(
     if title:
         print(title)
 
+    if normalize:
+        samples = samples / np.max(np.abs(samples))
+
     if show_analysis:
         plot_spectrum_and_waveform(samples, sr=sr, title=title)
         # plot_cycles(samples)
 
-    res = Audio(samples, rate=sr, normalize=normalize)
+    res = Audio(samples, rate=sr)
 
     if auto_play:
         import subprocess
@@ -340,8 +343,11 @@ def white_noise(secs, seed=42, sr=DEFAULT_SAMPLE_RATE):
     return np.random.rand(int(secs * sr)) * 2 - 1
 
 
-def add_silence(input_signal, silence_secs, sr=DEFAULT_SAMPLE_RATE):
-    return np.pad(input_signal, (0, int(silence_secs * sr)))
+def add_silence(input_signal, silence_secs, sr=DEFAULT_SAMPLE_RATE, before=False):
+    if before:
+        return np.pad(input_signal, (int(silence_secs * sr), 0))
+    else:
+        return np.pad(input_signal, (0, int(silence_secs * sr)))
 
 
 def comb(input_signal, delay_samples, a, feedback):
@@ -523,7 +529,9 @@ class AudioClip:
         write_wave(path, self.samples, self.sr)
 
     def get_first_channel(self):
-        if len(self.samples.shape) == 2 and self.samples.shape[0] < 3:
+        if (
+            len(self.samples.shape) > 1 and self.samples.shape[0] < 20
+        ):  # if this is better than 20, we're on the wrong axis
             return self.samples[0, :]
         elif len(self.samples.shape) == 1:
             return self.samples

@@ -71,7 +71,7 @@ class FaustProcessor:
             try:
                 subprocess.check_output(["faust", "-svg", self.path.as_posix()])
             except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Error generating SVG: {e}")
+                raise RuntimeError(f"Error generating SVG: {e.output.decode()}")
             process_svg_path = Path(td) / f"{self.name}_{self.sha256}-svg/process.svg"
             self.process_svg_path = process_svg_path
 
