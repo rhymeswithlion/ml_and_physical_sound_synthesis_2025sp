@@ -493,13 +493,15 @@ def string(
 
 
 def write_wave(path, samples, sr=44100):
-    import wave
+    from scipy.io import wavfile
 
-    with wave.open(str(path), "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(sr)
-        wf.writeframes(samples.tobytes())
+    samples = samples.astype(np.float32)
+
+    # If it has values over 1, normalize
+    if np.max(np.abs(samples)) > 1:
+        samples = samples / np.max(np.abs(samples))
+
+    wavfile.write(path, sr, samples)
 
 
 class AudioClip:

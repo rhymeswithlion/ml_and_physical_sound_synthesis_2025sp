@@ -71,7 +71,9 @@ class FaustProcessor:
             try:
                 subprocess.check_output(["faust", "-svg", self.path.as_posix()])
             except subprocess.CalledProcessError as e:
+                print(self.code)
                 raise RuntimeError(f"Error generating SVG: {e.output.decode()}")
+
             process_svg_path = Path(td) / f"{self.name}-svg/process.svg"
             self.process_svg_path = process_svg_path
 
@@ -94,3 +96,17 @@ class FaustProcessor:
                 raise RuntimeError(f"Error deleting temporary directory. {self.td}")
             shutil.rmtree(self.td)
             self.td = None
+
+    def show_components(self, name="fp"):
+        print("Listing b_ and p_ parameters:")
+        nodes = [(f"{name}.dsp.dsp", self.dsp.dsp)]
+        while nodes:
+            name, current = nodes.pop()
+            print(name)
+
+            for item in dir(current):
+                sub_name = f"{name}.{item}"
+                if item.startswith("b_"):
+                    nodes.append((sub_name, getattr(current, item)))
+                if item.startswith("p_"):
+                    nodes.append((sub_name, getattr(current, item)))
